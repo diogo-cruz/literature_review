@@ -9,6 +9,7 @@ A Python package that automates the process of analyzing research papers for lit
 - Generates individual paper summaries and a comprehensive meta-summary
 - Caches analysis results to avoid redundant API calls
 - Handles API rate limits automatically
+- Exports paper summaries to CSV for easy analysis
 
 ## Installation
 
@@ -68,11 +69,26 @@ python run.py
    - `meta_summary_[timestamp].md`: Comprehensive analysis across all papers
    - `paper_*_[timestamp]_raw.json`: Raw analysis data including paper text
 
+3. Generate a CSV summary:
+```bash
+python gather_summaries.py
+```
+This will create `paper_summaries.csv` containing:
+- Index: Paper's position in paper_list.txt
+- Arxiv ID: Paper's arxiv identifier
+- Title: Paper title
+- Authors: Paper authors
+- Summary: Brief summary of the paper
+- Relation to project: How the paper relates to your project
+- Potential Extensions: Possible future work or extensions
+- Relevance: Numerical relevance score (0-100)
+
 The package will:
 - Download PDFs to the `papers/` directory
 - Cache analysis results in `.cache/` to avoid reprocessing
 - Handle API rate limits with automatic retries
 - Generate both individual summaries and a meta-summary
+- Export structured data to CSV for further analysis
 
 ## Requirements
 
