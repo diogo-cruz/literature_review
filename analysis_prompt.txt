@@ -1,0 +1,10 @@
+I'm currently doing a literature review for my project (see the project document). In particular, I'd like to know what the current literature has already done that is related to this, and to what extent I can improve upon it, and do something novel (related to my project proposal). In order to do so, I'm analyzing relevant papers in the literature one by one, and seeing if they have any interesting insights that are relevant to my project.
+
+I'd like to summarize the paper's contributions that are relevant to my project. Analyze their results in depth. In particular, for any claims that you make, include the relevant paper of the paper where the information can be found (otherwise I won't know where it came from).
+
+Therefore, start by:
+* Writing a summary of the paper.
+* Mention its relation to my project proposal.
+* Brainstorm potential extensions or topics that would be interesting to expand on.
+
+If the paper is not relevant to my project, just say so.

@@ -1,0 +1,10 @@
+[claude]
+model = "claude-3-5-sonnet-latest"
+max_tokens = 4000
+temperature = 0
+
+[files]
+project_doc = "project.docx"
+paper_list = "paper_list.txt"
+summaries_dir = "summaries"
+papers_dir = "papers" 
