@@ -30,6 +30,9 @@ class LiteratureReview:
         
         summaries = []
         for link in arxiv_links:
+            # Extract paper ID from URL
+            paper_id = self.downloader._extract_arxiv_id(link)
+            
             # Download paper
             pdf_path = self.downloader.download(link)
             
@@ -39,7 +42,8 @@ class LiteratureReview:
             # Analyze with Claude
             summary = self.analyzer.analyze_paper(
                 paper_text=paper_text,
-                project_context=project_context
+                project_context=project_context,
+                paper_id=paper_id
             )
             summaries.append(summary)
         

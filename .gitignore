@@ -34,4 +34,5 @@ ENV/
 # Project specific
 papers/
 summaries/
+.cache/
 *.pdf
