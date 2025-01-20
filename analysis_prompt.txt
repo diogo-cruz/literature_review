@@ -6,5 +6,6 @@ Therefore, start by:
 * Writing a summary of the paper.
 * Mention its relation to my project proposal.
 * Brainstorm potential extensions or topics that would be interesting to expand on.
+* Score the paper's relevance to my project proposal, from 0 to 100.
 
-If the paper is not relevant to my project, just say so.
+If the paper is not relevant to my project, just say so. Score its relevance as 0.
