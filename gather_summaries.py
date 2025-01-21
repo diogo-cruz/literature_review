@@ -13,8 +13,9 @@ def extract_arxiv_id(url: str) -> str:
 def get_paper_metadata(arxiv_id: str) -> Dict:
     """Fetch paper metadata from arxiv API."""
     try:
+        client = arxiv.Client()
         search = arxiv.Search(id_list=[arxiv_id])
-        paper = next(search.results())
+        paper = next(client.results(search))
         return {
             'Arxiv ID': arxiv_id,
             'Title': paper.title,
@@ -35,28 +36,48 @@ def parse_summary_file(file_path: str) -> Dict:
             content = f.read()
 
         # Initialize default values
-        summary = relevance = relation = extensions = "N/A"
+        summary = relevance = relation = extensions = reasoning = "N/A"
 
         # Extract sections using regex patterns
-        if summary_match := re.search(r'Summary:\s*(.*?)(?=\n\n[A-Z]|$)', content, re.DOTALL):
+        # Handle various summary header formats:
+        # - Summary:
+        # - Summary of the paper:
+        # - Summary of [paper name]:
+        # - Summary of the Paper:
+        if summary_match := re.search(r'(?:\*\*)?(?:Summary|Summary of (?:the )?(?:[Pp]aper|.*?)):.*?(?:\*\*)?\s*(.*?)(?=\n\n(?:\*\*)?[A-Z][a-zA-Z ]*(?:of (?:the )?(?:[Pp]aper|.*?))?:|\Z)', content, re.DOTALL):
             summary = summary_match.group(1).strip()
         
-        if relation_match := re.search(r'Relation to .*?:\s*(.*?)(?=\n\n[A-Z]|$)', content, re.DOTALL):
+        # Handle variations of the relation section:
+        # - Relation to your project:
+        # - Key findings relevant to your project:
+        # - Relevance to your project:
+        if relation_match := re.search(r'(?:\*\*)?(?:Relation to|Key findings relevant to|Relevance to) .*?:.*?(?:\*\*)?\s*(.*?)(?=\n\n(?:\*\*)?[A-Z][a-zA-Z ]*(?:of (?:the )?(?:[Pp]aper|.*?))?:|\Z)', content, re.DOTALL):
             relation = relation_match.group(1).strip()
         
-        if extensions_match := re.search(r'Potential extensions.*?:\s*(.*?)(?=\n\n[A-Z]|$)', content, re.DOTALL):
+        # Handle "Potential Extensions" and variations (topics, extensions/topics)
+        if extensions_match := re.search(r'(?:\*\*)?Potential (?:[Ee]xtensions|[Ee]xtensions/[Tt]opics|[Tt]opics|[Ee]xtensions.*?):.*?(?:\*\*)?\s*(.*?)(?=\n\n(?:\*\*)?[A-Z][a-zA-Z ]*(?:of (?:the )?(?:[Pp]aper|.*?))?:|\Z)', content, re.DOTALL):
             extensions = extensions_match.group(1).strip()
         
-        if relevance_match := re.search(r'Relevance.*?:\s*(\d+)/100', content):
-            relevance = relevance_match.group(1)
-        elif relevance_match := re.search(r'Relevance Score:\s*(\d+)/100', content):
-            relevance = relevance_match.group(1)
+        # Find score and everything after it, handling trailing bold markers
+        score_and_text = re.search(r'(?:\*\*)?(?:Relevance|Score).*?:.*?(?:\*\*)?\s*(\d+)/100\s*(?:\*\*)?(.*)', content, re.DOTALL)
+        
+        if score_and_text:
+            relevance = score_and_text.group(1)
+            full_text = score_and_text.group(2).strip()
+            
+            # Split into sentences and remove the last one if it ends with a question mark
+            sentences = full_text.split('\n\n')
+            if sentences and sentences[-1].strip().endswith('?'):
+                full_text = '\n\n'.join(sentences[:-1])
+            
+            reasoning = full_text.strip()
 
         return {
             'Summary': summary,
             'Relation to project': relation,
             'Potential Extensions': extensions,
-            'Relevance': relevance
+            'Relevance': relevance,
+            'Reasoning': reasoning
         }
     except Exception as e:
         print(f"Error parsing summary file {file_path}: {e}")
@@ -64,7 +85,8 @@ def parse_summary_file(file_path: str) -> Dict:
             'Summary': 'N/A',
             'Relation to project': 'N/A',
             'Potential Extensions': 'N/A',
-            'Relevance': 'N/A'
+            'Relevance': 'N/A',
+            'Reasoning': 'N/A'
         }
 
 def main():
@@ -105,11 +127,21 @@ def main():
     df = pd.DataFrame(papers_data)
     df = df[[
         'Index', 'Arxiv ID', 'Title', 'Authors', 'Summary',
-        'Relation to project', 'Potential Extensions', 'Relevance'
+        'Relation to project', 'Potential Extensions', 'Relevance', 'Reasoning'
     ]]
     
+    # Count N/A entries for each column
+    na_counts = {col: df[col].eq('N/A').sum() for col in df.columns}
+    
+    # Save to CSV
     df.to_csv('paper_summaries.csv', index=False)
-    print(f"Successfully processed {len(papers_data)} papers. Results saved to paper_summaries.csv")
+    
+    # Print summary
+    print(f"\nSuccessfully processed {len(papers_data)} papers. Results saved to paper_summaries.csv")
+    print("\nN/A entries per column:")
+    for col, count in na_counts.items():
+        if count > 0:  # Only show columns with N/A entries
+            print(f"- {col}: {count}")
 
 if __name__ == "__main__":
     main() 

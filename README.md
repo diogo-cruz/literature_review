@@ -95,3 +95,46 @@ The package will:
 - Python 3.8+ (tested with 3.12)
 - Claude API key
 - Word document with project context 
+
+## Utility Scripts
+
+### gather_summaries.py
+
+A script that collects and organizes all paper summaries into a single CSV file. It:
+- Extracts metadata from arXiv for each paper
+- Parses the markdown summaries to extract key sections
+- Combines all information into a structured CSV with fields:
+  - Index
+  - Arxiv ID
+  - Title
+  - Authors
+  - Summary
+  - Relation to project
+  - Potential Extensions
+  - Relevance score
+  - Reasoning for the score
+
+Usage:
+```bash
+python gather_summaries.py
+```
+
+### collect_recent_papers.py
+
+A script that collects recent Machine Learning papers from arXiv's cs.LG category. Features:
+- Collects papers from a specified time range (default: last 180 days)
+- Uses date chunking to handle API limits gracefully
+- Saves papers to CSV with metadata including:
+  - Title
+  - Authors
+  - Abstract
+  - Publication date
+  - arXiv ID
+  - URL
+
+Usage:
+```bash
+python collect_recent_papers.py
+```
+
+The output is saved to `recent_ml_papers.csv`. 

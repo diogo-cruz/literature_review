@@ -36,3 +36,4 @@ papers/
 summaries/
 .cache/
 *.pdf
+logs/
