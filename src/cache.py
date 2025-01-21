@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 import hashlib
+import re
 
 class PromptCache:
     def __init__(self, cache_dir: str = ".cache"):
@@ -21,7 +22,23 @@ class PromptCache:
         Returns:
             Hash string
         """
-        return hashlib.sha256(content.encode()).hexdigest()
+        # Clean the content of problematic Unicode characters
+        cleaned_content = content.encode('ascii', 'ignore').decode()
+        return hashlib.sha256(cleaned_content.encode()).hexdigest()
+    
+    def _legacy_hash(self, content: str) -> str:
+        """Compute hash using the old method for backward compatibility.
+        
+        Args:
+            content: Content to hash
+            
+        Returns:
+            Hash string
+        """
+        try:
+            return hashlib.sha256(content.encode()).hexdigest()
+        except UnicodeEncodeError:
+            return None
     
     def get(self, paper_id: str, prompt: str) -> dict | None:
         """Get cached analysis result if it exists.
@@ -33,12 +50,25 @@ class PromptCache:
         Returns:
             Cached analysis result or None if not found
         """
+        # Try new hash first
         prompt_hash = self._compute_hash(prompt)
         cache_file = self.cache_dir / f"{paper_id}_{prompt_hash}.json"
         
+        # If not found, try legacy hash
+        if not cache_file.exists():
+            legacy_hash = self._legacy_hash(prompt)
+            if legacy_hash:
+                legacy_file = self.cache_dir / f"{paper_id}_{legacy_hash}.json"
+                if legacy_file.exists():
+                    cache_file = legacy_file
+        
         if cache_file.exists():
-            with open(cache_file) as f:
-                return json.load(f)
+            try:
+                with open(cache_file) as f:
+                    return json.load(f)
+            except (json.JSONDecodeError, UnicodeDecodeError):
+                print(f"\nWarning: Corrupted cache file for paper {paper_id}, will reanalyze")
+                return None
         return None
     
     def save(self, paper_id: str, prompt: str, result: dict) -> None:
@@ -52,5 +82,8 @@ class PromptCache:
         prompt_hash = self._compute_hash(prompt)
         cache_file = self.cache_dir / f"{paper_id}_{prompt_hash}.json"
         
-        with open(cache_file, "w") as f:
-            json.dump(result, f, indent=2) 
+        try:
+            with open(cache_file, "w", encoding='utf-8') as f:
+                json.dump(result, f, indent=2, ensure_ascii=False)
+        except Exception as e:
+            print(f"\nWarning: Failed to cache results for paper {paper_id}: {str(e)}") 

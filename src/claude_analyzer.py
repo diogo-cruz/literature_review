@@ -30,6 +30,17 @@ class ClaudeAnalyzer:
         self.max_retries = 5
         self.base_retry_delay = 60  # seconds
         
+    def _clean_text(self, text: str) -> str:
+        """Clean text of problematic Unicode characters.
+        
+        Args:
+            text: Text to clean
+            
+        Returns:
+            Cleaned text
+        """
+        return text.encode('ascii', 'ignore').decode()
+        
     def _call_claude_api(self, prompt: str, retry_count: int = 0) -> Optional[str]:
         """Call Claude API with rate limiting and retries.
         
@@ -46,13 +57,16 @@ class ClaudeAnalyzer:
             time.sleep(self.min_request_interval - time_since_last)
             
         try:
+            # Clean the prompt before sending to API
+            cleaned_prompt = self._clean_text(prompt)
+            
             response = self.client.messages.create(
                 model=self.config.claude_model,
                 max_tokens=self.config.claude_max_tokens,
                 temperature=self.config.claude_temperature,
                 messages=[{
                     "role": "user",
-                    "content": prompt
+                    "content": cleaned_prompt
                 }]
             )
             self.last_request_time = time.time()
@@ -89,7 +103,7 @@ Paper Content:
 
 {self.prompt_template}"""
 
-        # Check cache first
+        # Check cache first - use original prompt for cache key to maintain compatibility
         if cached_result := self.cache.get(paper_id, prompt):
             print(f"Using cached analysis for paper {paper_id}")
             return cached_result
@@ -107,7 +121,7 @@ Paper Content:
             "project_context": project_context
         }
         
-        # Cache the result
+        # Cache the result using original prompt to maintain compatibility
         self.cache.save(paper_id, prompt, result)
         
         return result 
